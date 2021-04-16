@@ -1,0 +1,206 @@
+kind: ClusterProvisioner
+apiVersion: konvoy.mesosphere.io/v1beta2
+metadata:
+  name: trustedchoice-lab
+  creationTimestamp: "2021-04-16T21:03:00Z"
+spec:
+  provider: aws
+  aws:
+    region: us-west-2
+    vpc:
+      ID: vpc-0873a6200463f6b8b
+      routeTableID: rtb-05e9835824cc82aa9
+      overrideDefaultRouteTable: false
+      enableInternetGateway: false
+      enableVPCEndpoints: false
+      internetGatewayID: igw-086294033cf4e4e23
+    availabilityZones:
+    - us-west-2a
+    - us-west-2b
+    - us-west-2c
+    elb:
+      apiServerPort: 6443
+      internal: false
+      subnetIDs:
+      - subnet-00a3e215752aecbe2
+      - subnet-0fa238149110fb1e3
+      - subnet-0c4646c7ae55fdd66
+    tags:
+      owner: sagarmalla
+  nodePools:
+    - name: worker
+      count: 4
+      machine:
+        imageID: ami-0a248ce88bcc7bd23
+        rootVolumeSize: 80
+        rootVolumeType: gp2
+        imagefsVolumeEnabled: true
+        imagefsVolumeSize: 160
+        imagefsVolumeType: gp2
+        imagefsVolumeDevice: xvdb
+        type: m5.2xlarge
+        aws:
+          subnetIDs:
+          - subnet-055be01584b36fbb2
+          - subnet-0fc4787f39bdfbeee
+          - subnet-05a2a906c55d1ae87
+    - name: control-plane
+      controlPlane: true
+      count: 3
+      machine:
+        imageID: ami-0a248ce88bcc7bd23
+        rootVolumeSize: 80
+        rootVolumeType: io1
+        rootVolumeIOPS: 1000
+        imagefsVolumeEnabled: true
+        imagefsVolumeSize: 160
+        imagefsVolumeType: gp2
+        imagefsVolumeDevice: xvdb
+        type: m5.xlarge
+        aws:
+          subnetIDs:
+          - subnet-055be01584b36fbb2
+          - subnet-0fc4787f39bdfbeee
+          - subnet-05a2a906c55d1ae87
+    - name: bastion
+      bastion: true
+      count: 1
+      machine:
+        imageID: ami-0a248ce88bcc7bd23
+        rootVolumeSize: 10
+        rootVolumeType: gp2
+        imagefsVolumeEnabled: false
+        type: m5.large
+        aws:
+          subnetIDs:
+            - subnet-00a3e215752aecbe2
+            - subnet-0fa238149110fb1e3
+            - subnet-0c4646c7ae55fdd66
+
+  sshCredentials:
+    user: centos
+    publicKeyFile: trustedchoice-lab-ssh.pub
+    privateKeyFile: trustedchoice-lab-ssh.pem
+  version: v1.7.2
+---
+kind: ClusterConfiguration
+apiVersion: konvoy.mesosphere.io/v1beta2
+metadata:
+  name: trustedchoice-lab
+  creationTimestamp: "2021-04-16T21:03:00Z"
+spec:
+  kubernetes:
+    version: 1.19.9
+    networking:
+      podSubnet: 192.168.0.0/16
+      serviceSubnet: 10.0.0.0/18
+      iptables:
+        addDefaultRules: false
+    cloudProvider:
+      provider: aws
+    admissionPlugins:
+      enabled:
+        - AlwaysPullImages
+        - NodeRestriction
+  containerNetworking:
+    calico:
+      version: v3.17.3
+      encapsulation: ipip
+      mtu: 1480
+  containerRuntime:
+    containerd:
+      version: 1.3.9
+  osPackages:
+    enableAdditionalRepositories: true
+  nodePools:
+    - name: worker
+  addons:
+    - configRepository: https://github.com/mesosphere/kubernetes-base-addons
+      configVersion: stable-1.19-3.4.1
+      addonsList:
+        - name: ambassador # is currently in Experimental status. More information: https://docs.d2iq.com/dkp/konvoy/latest/version-policy/#experimental-status
+          enabled: false
+        - name: awsebscsiprovisioner
+          enabled: true
+        - name: awsebsprovisioner
+          enabled: false
+          values: |
+            storageclass:
+              isDefault: false
+        - name: cert-manager
+          enabled: true
+        - name: dashboard
+          enabled: true
+        - name: defaultstorageclass-protection
+          enabled: true
+        - name: dex
+          enabled: true
+        - name: dex-k8s-authenticator
+          enabled: true
+        - name: elasticsearch
+          enabled: true
+        - name: elasticsearch-curator
+          enabled: true
+        - name: elasticsearchexporter
+          enabled: true
+        - name: external-dns
+          enabled: false
+        - name: flagger
+          enabled: false
+        - name: fluentbit
+          enabled: true
+        - name: gatekeeper
+          enabled: true
+        - name: istio # is currently in Experimental status. More information: https://docs.d2iq.com/dkp/konvoy/latest/version-policy/#experimental-status
+          enabled: false
+        - name: jaeger # is currently in Experimental status. More information: https://docs.d2iq.com/dkp/konvoy/latest/version-policy/#experimental-status
+          enabled: false
+        - name: kiali # is currently in Experimental status. More information: https://docs.d2iq.com/dkp/konvoy/latest/version-policy/#experimental-status
+          enabled: false
+        - name: kibana
+          enabled: true
+        - name: konvoyconfig
+          enabled: true
+        - name: kube-oidc-proxy
+          enabled: true
+        - name: localvolumeprovisioner
+          enabled: false
+          values: |
+            # Multiple storage classes can be defined here. This allows to, e.g.,
+            # distinguish between different disk types.
+            # For each entry a storage class '$name' and
+            # a host folder '/mnt/$dirName' will be created. Volumes mounted to this
+            # folder are made available in the storage class.
+            storageclasses:
+              - name: localvolumeprovisioner
+                dirName: disks
+                isDefault: false
+                reclaimPolicy: Delete
+                volumeBindingMode: WaitForFirstConsumer
+        - name: nvidia
+          enabled: false
+        - name: opsportal
+          enabled: true
+        - name: prometheus
+          enabled: true
+        - name: prometheusadapter
+          enabled: true
+        - name: reloader
+          enabled: true
+        - name: traefik
+          enabled: true
+        - name: traefik-forward-auth
+          enabled: true
+        - name: velero
+          enabled: true
+    - configRepository: https://github.com/mesosphere/kubeaddons-dispatch
+      configVersion: stable-1.19-1.4.2
+      addonsList:
+        - name: dispatch
+          enabled: false
+    - configRepository: https://github.com/mesosphere/kubeaddons-kommander
+      configVersion: stable-1.19-1.3.2
+      addonsList:
+        - name: kommander
+          enabled: true
+  version: v1.7.2
