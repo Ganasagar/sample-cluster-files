@@ -27,6 +27,8 @@ spec:
       - subnet-0c4646c7ae55fdd66
     tags:
       owner: sagarmalla
+      expiration: 350h
+      Name: sa-soak-trustedchoice
   nodePools:
     - name: worker
       count: 4
