@@ -28,7 +28,7 @@ spec:
     tags:
       owner: sagarmalla
       expiration: 350h
-      Name: sa-soak-trustedchoice
+#      Name: sa-soak-trustedchoice
   nodePools:
     - name: worker
       count: 4
@@ -65,8 +65,8 @@ spec:
           - subnet-0fc4787f39bdfbeee
           - subnet-05a2a906c55d1ae87
     - name: bastion
-      bastion: false
-      count: 0
+      bastion: true
+      count: 1
       machine:
         imageID: ami-0a248ce88bcc7bd23
         rootVolumeSize: 10
