@@ -22,9 +22,9 @@ spec:
       apiServerPort: 6443
       internal: false
       subnetIDs:
-      - subnet-00a3e215752aecbe2
-      - subnet-0fa238149110fb1e3
-      - subnet-0c4646c7ae55fdd66
+      - subnet-055be01584b36fbb2
+      - subnet-0fc4787f39bdfbeee
+      - subnet-05a2a906c55d1ae87
     tags:
       owner: sagarmalla
       expiration: 350h
